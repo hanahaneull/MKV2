@@ -222,6 +222,41 @@ DiscordAPI = {
             }
         });
     },
+    GetUserInformation(token, callback) 
+    {
+        request.get('https://discord.com/api/v8/users/@me', {
+            headers: {
+                'authorization' : token,
+                'user-agent' : 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.121 Safari/537.36',
+                'x-super-properties' : 'eyJvcyI6IldpbmRvd3MiLCJicm93c2VyIjoiQ2hyb21lIiwiZGV2aWNlIjoiIiwiYnJvd3Nlcl91c2VyX2FnZW50IjoiTW96aWxsYS81LjAgKFdpbmRvd3MgTlQgMTAuMDsgV2luNjQ7IHg2NCkgQXBwbGVXZWJLaXQvNTM3LjM2IChLSFRNTCwgbGlrZSBHZWNrbykgQ2hyb21lLzg1LjAuNDE4My4xMjEgU2FmYXJpLzUzNy4zNiIsImJyb3dzZXJfdmVyc2lvbiI6Ijg1LjAuNDE4My4xMjEiLCJvc192ZXJzaW9uIjoiMTAiLCJyZWZlcnJlciI6Imh0dHBzOi8vd3d3Lmdvb2dsZS5jb20vIiwicmVmZXJyaW5nX2RvbWFpbiI6Ind3dy5nb29nbGUuY29tIiwic2VhcmNoX2VuZ2luZSI6Imdvb2dsZSIsInJlZmVycmVyX2N1cnJlbnQiOiIiLCJyZWZlcnJpbmdfZG9tYWluX2N1cnJlbnQiOiIiLCJyZWxlYXNlX2NoYW5uZWwiOiJzdGFibGUiLCJjbGllbnRfYnVpbGRfbnVtYmVyIjo2NzgyNSwiY2xpZW50X2V2ZW50X3NvdXJjZSI6bnVsbH0=',
+            }
+        }, (err, res, body) => {
+            if (res.statusCode == 200) {
+                callback(JSON.parse(body));
+            } else {
+                callback(0);
+            }
+        });
+    },
+    JoinServer(proxy, token, invitecode, callback) 
+    {
+        request.post(`https://discordapp.com/api/v8/invites/${invitecode}`, {
+            headers: {
+                'content-type' : 'application/json',
+                'authorization' : token,
+                'user-agent' : 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.121 Safari/537.36',
+                'x-super-properties' : 'eyJvcyI6IldpbmRvd3MiLCJicm93c2VyIjoiQ2hyb21lIiwiZGV2aWNlIjoiIiwiYnJvd3Nlcl91c2VyX2FnZW50IjoiTW96aWxsYS81LjAgKFdpbmRvd3MgTlQgMTAuMDsgV2luNjQ7IHg2NCkgQXBwbGVXZWJLaXQvNTM3LjM2IChLSFRNTCwgbGlrZSBHZWNrbykgQ2hyb21lLzg1LjAuNDE4My4xMjEgU2FmYXJpLzUzNy4zNiIsImJyb3dzZXJfdmVyc2lvbiI6Ijg1LjAuNDE4My4xMjEiLCJvc192ZXJzaW9uIjoiMTAiLCJyZWZlcnJlciI6Imh0dHBzOi8vd3d3Lmdvb2dsZS5jb20vIiwicmVmZXJyaW5nX2RvbWFpbiI6Ind3dy5nb29nbGUuY29tIiwic2VhcmNoX2VuZ2luZSI6Imdvb2dsZSIsInJlZmVycmVyX2N1cnJlbnQiOiIiLCJyZWZlcnJpbmdfZG9tYWluX2N1cnJlbnQiOiIiLCJyZWxlYXNlX2NoYW5uZWwiOiJzdGFibGUiLCJjbGllbnRfYnVpbGRfbnVtYmVyIjo2NzgyNSwiY2xpZW50X2V2ZW50X3NvdXJjZSI6bnVsbH0=',
+            },
+            body: `{}`,
+            proxy: proxy
+        }, (err, res, body) => {
+            if (res.statusCode == 200) {
+                callback();
+            } else {
+                callback(JSON.parse(body));
+            }
+        });
+    },
     CreateAccount(proxy, fingerprint, email, username, password, captcha, callback)
     {
         request.post('https://discord.com/api/v8/auth/register', {
@@ -697,6 +732,47 @@ app.get('/discord/api/verifyaccount', (req, res) => {
     } else {
         res.status(400).json({code: 400, msg: "Invalid Verification Type."});
     }
+});
+
+app.get('/discord/api/userinformation', (req, res) => {
+    if (!req.headers["x-api-key"]) {
+        res.status(401).json({code: 401, msg: "There is no present x-api-key header."})
+        return;
+    }
+
+    var apikey = req.headers["x-api-key"];  
+    var token = req.query.token;
+
+    if (!config.apikeys.includes(apikey)) {
+        res.status(401).json({code: 401, msg: "Invalid API Key."});
+        return;
+    }
+
+    DiscordAPI.GetUserInformation(token, (info) => {
+        res.status(200).json({info: info});
+    });
+});
+
+app.get('/discord/api/joinserver', (req, res) => {
+    if (!req.headers["x-api-key"]) {
+        res.status(401).json({code: 401, msg: "There is no present x-api-key header."})
+        return;
+    }
+
+    var apikey = req.headers["x-api-key"];  
+    var token = req.query.token;
+    var serverinvite = req.query.invite;
+
+    if (!config.apikeys.includes(apikey)) {
+        res.status(401).json({code: 401, msg: "Invalid API Key."});
+        return;
+    }
+
+    API.GetProxy((proxy) => {
+        DiscordAPI.JoinServer(proxy, token, serverinvite, () => {
+            res.status(200).json({success: 200, msg: "Joined."});
+        });
+    });
 });
 
 app.listen(1337, () => {
