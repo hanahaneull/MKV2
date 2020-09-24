@@ -1,4 +1,4 @@
 @Echo Off
 Title yeet
-node test.js
+node gen.js
 pause

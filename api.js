@@ -3,6 +3,7 @@ var express = require('express');
 var app = express();
 var fs = require('fs');
 const { Verify } = require('crypto');
+const { Console } = require('console');
 var config = {
     webshareAPIKey: "49fbff77620cd5722ca2170ffce46439ec779f61",
     onlinesimAPIKey: "bd25f9b1b16a8205597f272167c13be2",
@@ -21,6 +22,7 @@ config = JSON.parse(fs.readFileSync('./data/config.json', "utf8"));
 API = {
     SolvedCaptchas: [],
     PhoneIds: [],
+    Emails: [],
     Domains: [
         "foreskin.market",
         "support.eplcgames.com",
@@ -44,7 +46,11 @@ API = {
     GetEmails(email, callback)
     {
         request.get(`http://foreskin.market/api/${email}`, {}, (err, res, body) => {
-            callback(JSON.parse(body));
+            if (body == "[]") {
+                callback(0); 
+            } else {
+                callback(JSON.parse(body));
+            }
         });
     },
     GetEmailDomain() {
@@ -205,7 +211,7 @@ DiscordAPI = {
             }
         });
     },
-    GetUserInformation(proxy, token, callback) 
+    GetUserInformationWithProxy(proxy, token, callback) 
     {
         request.get('https://discord.com/api/v8/users/@me', {
             headers: {
@@ -231,10 +237,10 @@ DiscordAPI = {
                 'x-super-properties' : 'eyJvcyI6IldpbmRvd3MiLCJicm93c2VyIjoiQ2hyb21lIiwiZGV2aWNlIjoiIiwiYnJvd3Nlcl91c2VyX2FnZW50IjoiTW96aWxsYS81LjAgKFdpbmRvd3MgTlQgMTAuMDsgV2luNjQ7IHg2NCkgQXBwbGVXZWJLaXQvNTM3LjM2IChLSFRNTCwgbGlrZSBHZWNrbykgQ2hyb21lLzg1LjAuNDE4My4xMjEgU2FmYXJpLzUzNy4zNiIsImJyb3dzZXJfdmVyc2lvbiI6Ijg1LjAuNDE4My4xMjEiLCJvc192ZXJzaW9uIjoiMTAiLCJyZWZlcnJlciI6Imh0dHBzOi8vd3d3Lmdvb2dsZS5jb20vIiwicmVmZXJyaW5nX2RvbWFpbiI6Ind3dy5nb29nbGUuY29tIiwic2VhcmNoX2VuZ2luZSI6Imdvb2dsZSIsInJlZmVycmVyX2N1cnJlbnQiOiIiLCJyZWZlcnJpbmdfZG9tYWluX2N1cnJlbnQiOiIiLCJyZWxlYXNlX2NoYW5uZWwiOiJzdGFibGUiLCJjbGllbnRfYnVpbGRfbnVtYmVyIjo2NzgyNSwiY2xpZW50X2V2ZW50X3NvdXJjZSI6bnVsbH0=',
             }
         }, (err, res, body) => {
-            if (res.statusCode == 200) {
-                callback(JSON.parse(body));
-            } else {
+            if (res.statusCode == 401) {
                 callback(0);
+            } else {
+                callback(JSON.parse(body));
             }
         });
     },
@@ -619,7 +625,6 @@ app.get('/discord/api/verifyaccount', (req, res) => {
     }
 
     var apikey = req.headers["x-api-key"];  
-    var email = req.query.email;
     var token = req.query.token;
     var type = req.query.type;
 
@@ -632,52 +637,72 @@ app.get('/discord/api/verifyaccount', (req, res) => {
         console.log('[LOG] Requesting proxy..');
         API.GetProxy((proxy) => {
             console.log('[LOG] Received proxy..');
-            console.log('[LOG] Requesting Emails..');
-            API.GetEmails(email, (emails) => {
-                console.log('[LOG] Received Emails.. Checking Emails..');
-                var discordemail = emails[0];
-                if (discordemail.from[0].name == "Discord") {
-                    console.log('[LOG] Scraping URLs from email body..');
-                    var urls = API.GetURL(discordemail.body.text);
-                    var discordurl = urls[0].replace('\n', '');
-                    console.log('[LOG] Scraped Email Verification URL -> ' + discordurl);
-                    API.GetRedirect(discordurl, (redirect) => {
-                        console.log('[LOG] Mitigating Redirect.. Redirected URL -> ' + redirect);
-                        var emailtoken = redirect.split('#')[1].replace('token=', '');
-                        console.log('[LOG] Verifying Email with Email Token -> ' + emailtoken);
-                        console.log('[LOG] Solving Captcha.. ');
-                        API.GetCaptchaStart(config.twocaptchaAPIKey, "6Lef5iQTAAAAAKeIvIY-DeexoO3gj7ryl9rLMEnn", "https://discord.com/register", (requestid) => {
-                            if (requestid != 0) {
-                                console.log('[LOG] Waiting for captcha to be solved..');
-                                setInterval(() => {
-                                    if (!API.SolvedCaptchas.includes(requestid))
-                                    {
-                                        API.GetCaptchaEnd(config.twocaptchaAPIKey, requestid, (captcha) => {
-                                            if (captcha != null) {
-                                                console.log('[LOG] Captcha solved. Verifying account.. ');
-                                                DiscordAPI.VerifyEmail(proxy, captcha, token, emailtoken, (verified) => {
-                                                    if (verified != 0) {
-                                                        console.log('[LOG] Verified Account. Check response.');
-                                                        res.status(200).json({token: verified});
-                                                    } else {
-                                                        console.log('[FAIL] Could not verify account. Check the request.');
-                                                        res.status(400).json({code: 400, msg: "Unexpected error occurred."});
+            console.log('[LOG] Gathering Email..');
+            DiscordAPI.GetUserInformationWithProxy(proxy, token, (info) => {
+            if (info != 0) 
+            {
+                setInterval(() => {
+                    if (!API.Emails.includes(info.email))
+                    {
+                        API.GetEmails(info.email, (emails) => 
+                        {
+                            if (emails != 0) 
+                            {
+                                console.log('[LOG] Received Emails.. Checking Emails..');
+                                var discordemail = emails[0];
+                                if (discordemail.from[0].name == "Discord") {
+                                    console.log('[LOG] Scraping URLs from email body..');
+                                    var urls = API.GetURL(discordemail.body.text);
+                                    var discordurl = urls[0].replace('\n', '');
+                                    console.log('[LOG] Scraped Email Verification URL -> ' + discordurl);
+                                    API.GetRedirect(discordurl, (redirect) => {
+                                        console.log('[LOG] Mitigating Redirect.. Redirected URL -> ' + redirect);
+                                        var emailtoken = redirect.split('#')[1].replace('token=', '');
+                                        console.log('[LOG] Verifying Email with Email Token -> ' + emailtoken);
+                                        console.log('[LOG] Solving Captcha.. ');
+                                        API.GetCaptchaStart(config.twocaptchaAPIKey, "6Lef5iQTAAAAAKeIvIY-DeexoO3gj7ryl9rLMEnn", "https://discord.com/register", (requestid) => {
+                                            if (requestid != 0) {
+                                                console.log('[LOG] Waiting for captcha to be solved..');
+                                                setInterval(() => {
+                                                    if (!API.SolvedCaptchas.includes(requestid))
+                                                    {
+                                                        API.GetCaptchaEnd(config.twocaptchaAPIKey, requestid, (captcha) => {
+                                                            if (captcha != null) {
+                                                                console.log('[LOG] Captcha solved. Verifying account.. ');
+                                                                DiscordAPI.VerifyEmail(proxy, captcha, token, emailtoken, (verified) => {
+                                                                    if (verified != 0) {
+                                                                        console.log('[LOG] Verified Account. Check response.');
+                                                                        res.status(200).json({token: verified});
+                                                                    } else {
+                                                                        console.log('[FAIL] Could not verify account. Check the request.');
+                                                                        res.status(400).json({code: 400, msg: "Unexpected error occurred."});
+                                                                    }
+                                                                });
+                                                                API.SolvedCaptchas.push(requestid);
+                                                            }
+                                                        });
                                                     }
-                                                });
-                                                API.SolvedCaptchas.push(requestid);
+                                                }, 5000);
+                                            } else {
+                                                console.log('[FAIL] Could not start solving the captcha. Check the request.');
+                                                res.status(400).json({code: 400, msg: "Unexpected error occurred."});
                                             }
                                         });
-                                    }
-                                }, 5000);
-                            } else {
-                                console.log('[FAIL] Could not start solving the captcha. Check the request.');
-                                res.status(400).json({code: 400, msg: "Unexpected error occurred."});
+                                    });
+                                } else {
+                                    console.log('[FAIL] Could not get the user information associated to the account, this could mean the account has been disabled.');
+                                    res.status(400).json({code: 400, msg: "Unexpected error occurred."});
+                                }
+                                API.Emails.push(info.email);
                             }
                         });
-                    });
-                } else {
-                    res.status(400).json({code: 400, msg: "Unexpected error occurred."});
-                }
+                    }
+                }, 2000);
+              } 
+              else {
+                console.log('[FAIL] Could not get the user information associated to the account, this could mean the account has been disabled.');
+                res.status(400).json({code: 400, msg: "Unexpected error occurred."});
+              }
             });
         });
     } else if (type == 2) {
