@@ -263,7 +263,6 @@ DiscordAPI = {
                     callback(true);
                 }
                 else if (res.statusCode == 429) {
-                    console.log('hi');
                     API.GetProxy((proxy) => {
                         DiscordAPI.SendPhone(proxy, token, phonenumber, callback);
                     });
