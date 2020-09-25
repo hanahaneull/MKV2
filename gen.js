@@ -63,9 +63,8 @@ function createAccount(username, password, verify, verificationtype)
                                 }
                             });
                         } else {
-                            console.log(`[GEN] Created Account, verifying by ${verificationtype == 1 ? "email" : "phone"}`);
+                            console.log(`[GEN] Created Account, verifying by ${verificationtype == 1 ? "email" : "phone"}..`);
                             var token = JSON.parse(body).token;
-                            console.log(token);
                             request.get(`http://localhost:1337/discord/api/verifyaccount?token=${token}&type=${verificationtype}`, {
                                 headers: {
                                     'x-api-key' : APIkey
