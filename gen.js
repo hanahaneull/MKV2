@@ -36,7 +36,6 @@ function createAccount(username, password, verify, verificationtype)
         }, (err, res, body) => {
             if (res.statusCode == 200) {
                 if (!verify) {
-                    console.log(body);
                     console.log("[GEN] Created Account, saved to tokens.txt");
                     fs.writeFileSync("./data/tokens.txt", JSON.parse(body).token);
                 } else {
@@ -55,6 +54,8 @@ function createAccount(username, password, verify, verificationtype)
                                     'x-api-key' : APIkey
                                 }
                             }, (err, res, body) => {
+                                console.log(body);
+                                console.log(res);
                                 if (res.statusCode == 200) {
                                     console.log(`[GEN] Phone verified token: ${token} -> Saving to verifiedtokens.txt`);
                                     fs.writeFileSync("verifiedtokens.txt", JSON.stringify({token: token, verification: 3}));
@@ -85,12 +86,7 @@ function createAccount(username, password, verify, verificationtype)
 function startAccountCreator()
 {
     console.log("[GEN] Creating Accounts..");
-    createAccount(RandomString(15), RandomString(15), true);
-    /*
-    setInterval(() => {
-        createAccount(RandomString(15), RandomString(15), false, 0);
-    }, 60000);
-    */
+    createAccount(RandomString(15), RandomString(15), false);
 }
 
 startAccountCreator();
