@@ -140,10 +140,14 @@ API = {
     {
         request.get(`https://2captcha.com/in.php?key=${key}&method=userrecaptcha&googlekey=${sitekey}&pageurl=${pageurl}&json=1`, {}, (err, res, body) => {
              if (res.statusCode == 200 || res.statusCode == 204) {
-                 if (JSON.parse(body).status == 1) {
-                     callback(JSON.parse(body).request);
+                 if (body == "ERROR_NO_SLOT_AVAILABLE") {
+                    callback(0);
                  } else {
-                     callback(0);
+                    if (JSON.parse(body).status == 1) {
+                        callback(JSON.parse(body).request);
+                    } else {
+                        callback(0);
+                    }
                  }
              }
              else {

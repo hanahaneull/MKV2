@@ -86,7 +86,7 @@ function createAccount(username, password, verify, verificationtype)
 function startAccountCreator()
 {
     console.log("[GEN] Creating Accounts..");
-    createAccount(RandomString(15), RandomString(15), false);
+    createAccount(RandomString(15), RandomString(15), true, 1);
 }
 
 startAccountCreator();
