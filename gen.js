@@ -38,7 +38,7 @@ function createAccount(username, password, verify, verificationtype)
                 if (res.statusCode == 200) {
                     if (!verify) {
                         console.log("[GEN] Created Account, saved to tokens.txt");
-                        fs.writeFileSync("./data/tokens.txt", JSON.parse(body).token);
+                        fs.writeFileSync("./data/tokens.txt", JSON.stringify({token: JSON.parse(body).token, verification: 0}));
                     } else {
                         if (verificationtype == undefined) {
                             console.log(`[GEN] Created Account, verifying with both email and phone methods..`);
@@ -49,15 +49,15 @@ function createAccount(username, password, verify, verificationtype)
                                 }
                             }, (err, res, body) => {
                                 if (res.statusCode == 200) {
-                                    console.log(`[GEN] Verified token: ${token}`);
+                                    console.log(`[GEN] Email Verified token: ${token}`);
                                     request.get(`http://localhost:1337/discord/api/verifyaccount?token=${token}&type=2`, {
                                     headers: {
                                         'x-api-key' : APIkey
                                     }
                                 }, (err, res, body) => {
                                     if (res.statusCode == 200) {
-                                        console.log(`[GEN] Phone verified token: ${token} -> Saving to verifiedtokens.txt`);
-                                        fs.writeFileSync("verifiedtokens.txt", JSON.stringify({token: token, verification: 3}));
+                                        console.log(`[GEN] Phone verified token: ${token} -> Saving to tokens.txt`);
+                                        fs.writeFileSync("./data/tokens.txt", JSON.stringify({token: token, verification: 3}));
                                     }
                                   });
                                 }
@@ -71,8 +71,8 @@ function createAccount(username, password, verify, verificationtype)
                                 }
                             }, (err, res, body) => {
                                 if (res.statusCode == 200) {
-                                    console.log(`[GEN] ${verificationtype == 1 ? "Email" : "Phone"} verified token: ${token} -> Saving to verifiedtokens.txt`);
-                                    fs.writeFileSync("verifiedtokens.txt", JSON.stringify({token: token, verification: verificationtype}));
+                                    console.log(`[GEN] ${verificationtype == 1 ? "Email" : "Phone"} verified token: ${token} -> Saving to tokens.txt`);
+                                    fs.writeFileSync("./data/tokens.txt", JSON.stringify({token: token, verification: verificationtype}));
                                 }
                             });
                         }
@@ -89,7 +89,7 @@ function createAccount(username, password, verify, verificationtype)
 function startAccountCreator()
 {
     console.log("[GEN] Creating Accounts..");
-    createAccount(RandomString(15), RandomString(15), true, 2);
+    createAccount(RandomString(15), RandomString(15), true);
 }
 
 startAccountCreator();

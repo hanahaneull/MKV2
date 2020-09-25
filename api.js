@@ -716,7 +716,7 @@ app.get('/discord/api/verifyaccount', (req, res) => {
             console.log('[LOG] Requesting phone number..');
             API.CheckBalance(config.onlinesimAPIKey, (balance) => {
                 if (balance > 10.00) {
-                    API.GetNumberStart(config.onlinesimAPIKey, "discord", "7", (tzid) => {
+                    API.GetNumberStart(config.onlinesimAPIKey, "discord", "44", (tzid) => {
                         API.GetNumberEnd(config.onlinesimAPIKey, tzid, (number) => {
                             if (number != 0) {
                                 console.log('[LOG] Received Phone number -> ' + number);
