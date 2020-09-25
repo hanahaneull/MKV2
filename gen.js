@@ -28,65 +28,69 @@ function getEmail(callback) {
 
 function createAccount(username, password, verify, verificationtype)
 {
-    getEmail((email) => {
-        request.get(`http://localhost:1337/discord/api/createaccount?username=${username}&password=${password}&email=${email}`, {
-            headers: {
-                'x-api-key' : APIkey
-            }
-        }, (err, res, body) => {
-            if (res.statusCode == 200) {
-                if (!verify) {
-                    console.log("[GEN] Created Account, saved to tokens.txt");
-                    fs.writeFileSync("./data/tokens.txt", JSON.parse(body).token);
-                } else {
-                    if (verificationtype == undefined) {
-                        console.log(`[GEN] Created Account, verifying with both email and phone methods..`);
-                        var token = JSON.parse(body).token;
-                        request.get(`http://localhost:1337/discord/api/verifyaccount?token=${token}&type=1`, {
-                            headers: {
-                                'x-api-key' : APIkey
-                            }
-                        }, (err, res, body) => {
-                            if (res.statusCode == 200) {
-                                console.log(`[GEN] Verified token: ${token}`);
-                                request.get(`http://localhost:1337/discord/api/verifyaccount?token=${token}&type=2`, {
+    try {
+        getEmail((email) => {
+            request.get(`http://localhost:1337/discord/api/createaccount?username=${username}&password=${password}&email=${email}`, {
+                headers: {
+                    'x-api-key' : APIkey
+                }
+            }, (err, res, body) => {
+                if (res.statusCode == 200) {
+                    if (!verify) {
+                        console.log("[GEN] Created Account, saved to tokens.txt");
+                        fs.writeFileSync("./data/tokens.txt", JSON.parse(body).token);
+                    } else {
+                        if (verificationtype == undefined) {
+                            console.log(`[GEN] Created Account, verifying with both email and phone methods..`);
+                            var token = JSON.parse(body).token;
+                            request.get(`http://localhost:1337/discord/api/verifyaccount?token=${token}&type=1`, {
                                 headers: {
                                     'x-api-key' : APIkey
                                 }
                             }, (err, res, body) => {
-                                console.log(body);
-                                console.log(res);
                                 if (res.statusCode == 200) {
-                                    console.log(`[GEN] Phone verified token: ${token} -> Saving to verifiedtokens.txt`);
-                                    fs.writeFileSync("verifiedtokens.txt", JSON.stringify({token: token, verification: 3}));
+                                    console.log(`[GEN] Verified token: ${token}`);
+                                    request.get(`http://localhost:1337/discord/api/verifyaccount?token=${token}&type=2`, {
+                                    headers: {
+                                        'x-api-key' : APIkey
+                                    }
+                                }, (err, res, body) => {
+                                    if (res.statusCode == 200) {
+                                        console.log(`[GEN] Phone verified token: ${token} -> Saving to verifiedtokens.txt`);
+                                        fs.writeFileSync("verifiedtokens.txt", JSON.stringify({token: token, verification: 3}));
+                                    }
+                                  });
                                 }
-                              });
-                            }
-                        });
-                    } else {
-                        console.log(`[GEN] Created Account, verifying by ${verificationtype == 1 ? "email" : "phone"}`);
-                        var token = JSON.parse(body).token;
-                        request.get(`http://localhost:1337/discord/api/verifyaccount?token=${token}&type=${verificationtype}`, {
-                            headers: {
-                                'x-api-key' : APIkey
-                            }
-                        }, (err, res, body) => {
-                            if (res.statusCode == 200) {
-                                console.log(`[GEN] ${verificationtype == 1 ? "Email" : "Phone"} verified token: ${token} -> Saving to verifiedtokens.txt`);
-                                fs.writeFileSync("verifiedtokens.txt", JSON.stringify({token: token, verification: verificationtype}));
-                            }
-                        });
+                            });
+                        } else {
+                            console.log(`[GEN] Created Account, verifying by ${verificationtype == 1 ? "email" : "phone"}`);
+                            var token = JSON.parse(body).token;
+                            console.log(token);
+                            request.get(`http://localhost:1337/discord/api/verifyaccount?token=${token}&type=${verificationtype}`, {
+                                headers: {
+                                    'x-api-key' : APIkey
+                                }
+                            }, (err, res, body) => {
+                                if (res.statusCode == 200) {
+                                    console.log(`[GEN] ${verificationtype == 1 ? "Email" : "Phone"} verified token: ${token} -> Saving to verifiedtokens.txt`);
+                                    fs.writeFileSync("verifiedtokens.txt", JSON.stringify({token: token, verification: verificationtype}));
+                                }
+                            });
+                        }
                     }
                 }
-            }
+            });
         });
-    });
+    }
+    catch (err) {
+        
+    }
 }
 
 function startAccountCreator()
 {
     console.log("[GEN] Creating Accounts..");
-    createAccount(RandomString(15), RandomString(15), true, 1);
+    createAccount(RandomString(15), RandomString(15), true, 2);
 }
 
 startAccountCreator();

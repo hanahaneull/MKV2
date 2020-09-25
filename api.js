@@ -733,7 +733,7 @@ app.get('/discord/api/verifyaccount', (req, res) => {
                                                         DiscordAPI.SendCode(proxy, token, code, (sentcode) => {
                                                             if (sentcode) {
                                                                 console.log('[LOG] Sent Code. Verified Account.');
-                                                                res.status(400).json({token: token});
+                                                                res.status(200).json({token: token});
                                                             } else {
                                                                 console.log('[FAIL] Failed to send code to discord.');
                                                                 res.status(400).json({code: 400, msg: "Unexpected error occurred."});
