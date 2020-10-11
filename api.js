@@ -5,9 +5,9 @@ var fs = require('fs');
 const { Verify } = require('crypto');
 const { Console } = require('console');
 var config = {
-    webshareAPIKey: "49fbff77620cd5722ca2170ffce46439ec779f61",
-    onlinesimAPIKey: "bd25f9b1b16a8205597f272167c13be2",
-    twocaptchaAPIKey: "2d960775a173a28a31b6b642fc726c6e",
+    webshareAPIKey: "webshareioapikey",
+    onlinesimAPIKey: "onlinesimapikey",
+    twocaptchaAPIKey: "2captchaapikey",
     apikeys: [
         "test"
     ]
